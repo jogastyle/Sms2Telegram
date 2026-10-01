@@ -71,8 +71,7 @@ public class SmsReceiver extends BroadcastReceiver {
 
         new Thread(() -> {
             try {
-                sendToTelegram(finalToken, finalChat,
-                        "SMS from: " + finalSender + "\n\n" + finalBody);
+                sendToTelegram(finalToken, finalChat, finalBody);
             } catch (Exception e) {
                 Log.e("SmsReceiver", "Error", e);
             } finally {
