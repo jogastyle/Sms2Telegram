@@ -33,20 +33,59 @@
             android:id="@+id/etSenders"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Senders (comma se alag, khali = sab)" />
+            android:hint="Senders (comma, khali = sab)" />
 
         <EditText
             android:id="@+id/etKeywords"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Keywords (comma se alag, khali = sab)" />
+            android:hint="Keywords (comma, khali = sab)" />
 
-        <Button
-            android:id="@+id/btnSave"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Save" />
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="SAVE" />
+
+            <Button
+                android:id="@+id/btnTest"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="TEST" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status:"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:background="#EEEEEE"
+            android:text="Waiting..."
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="12sp"
+            android:text="NOTE:&#10;1. SMS permission zaroori hai&#10;2. Battery &gt; Unrestricted karein&#10;3. TEST button se check karein"
+            android:textColor="#B00020" />
 
     </LinearLayout>
 </ScrollView>
