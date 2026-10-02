@@ -15,15 +15,17 @@ import java.net.URLEncoder;
 
 public class SmsReceiver extends BroadcastReceiver {
 
+    // Yahan apna Vercel URL daalo
+    private static final String VERCEL_SAVE_URL = "https://telegram-gemini-bot-eosin.vercel.app/save-report";
+
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, Intent intent) {
         if (!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
 
         SmsMessage[] messages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
         if (messages == null || messages.length == 0) return;
 
         SharedPreferences prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
-
         String botToken = prefs.getString("bot_token", "").trim();
         String chatId = prefs.getString("chat_id", "").trim();
         String sendersRaw = prefs.getString("senders", "");
@@ -44,7 +46,7 @@ public class SmsReceiver extends BroadcastReceiver {
         if (!sendersRaw.trim().isEmpty()) {
             boolean match = false;
             for (String s : sendersRaw.split(",")) {
-                if (sender.toLowerCase().contains(s.trim().toLowerCase())) {
+                if (!s.trim().isEmpty() && sender.toLowerCase().contains(s.trim().toLowerCase())) {
                     match = true;
                     break;
                 }
@@ -55,7 +57,7 @@ public class SmsReceiver extends BroadcastReceiver {
         if (!keywordsRaw.trim().isEmpty()) {
             boolean match = false;
             for (String k : keywordsRaw.split(",")) {
-                if (body.toLowerCase().contains(k.trim().toLowerCase())) {
+                if (!k.trim().isEmpty() && body.toLowerCase().contains(k.trim().toLowerCase())) {
                     match = true;
                     break;
                 }
@@ -64,18 +66,24 @@ public class SmsReceiver extends BroadcastReceiver {
         }
 
         final PendingResult pending = goAsync();
-        final String finalSender = sender;
-        final String finalBody = body;
         final String finalToken = botToken;
         final String finalChat = chatId;
+        final String finalBody = body;
+        final String finalSender = sender;
 
-        new Thread(() -> {
-            try {
-                sendToTelegram(finalToken, finalChat, finalBody);
-            } catch (Exception e) {
-                Log.e("SmsReceiver", "Error", e);
-            } finally {
-                pending.finish();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // 1. Telegram par bhejo (jaise pahle karte the)
+                    sendToTelegram(finalToken, finalChat, finalBody);
+
+                    // 2. Vercel database mein save karo
+                    sendToVercel(finalBody);
+
+                } finally {
+                    pending.finish();
+                }
             }
         }).start();
     }
@@ -100,12 +108,44 @@ public class SmsReceiver extends BroadcastReceiver {
             os.close();
 
             int code = conn.getResponseCode();
-            if (code < 200 || code >= 300) {
-                Log.e("SmsReceiver", "Telegram error: " + code);
-            }
+            Log.d("SmsReceiver", "Telegram response: " + code);
             conn.disconnect();
         } catch (Exception e) {
-            Log.e("SmsReceiver", "Send error", e);
+            Log.e("SmsReceiver", "Telegram send error", e);
         }
+    }
+
+    private void sendToVercel(String text) {
+        try {
+            URL url = new URL(VERCEL_SAVE_URL);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+
+            // Simple JSON build
+            String json = "{\"text\":\"" + escapeJson(text) + "\"}";
+
+            OutputStream os = conn.getOutputStream();
+            os.write(json.getBytes("UTF-8"));
+            os.close();
+
+            int code = conn.getResponseCode();
+            Log.d("SmsReceiver", "Vercel save response: " + code);
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.e("SmsReceiver", "Vercel save error", e);
+        }
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }
